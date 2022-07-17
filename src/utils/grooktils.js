@@ -43,7 +43,6 @@ async function loadCommands(Client) {
         const command = require(`${commandsDir}/${file}`);
         try {
             (command.disabled == undefined) ? Client.commands.set(command.name, command) : null;
-            console.log(`${command.name} has been loaded!`)
             c++;
         } catch (e) {
             console.log(e);   
