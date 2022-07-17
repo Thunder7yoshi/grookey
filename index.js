@@ -1,5 +1,12 @@
-const { join } = require('path');
-const Client = require('./source/templates/Client');
+/*
+    This file shouldn't be edited unless absoutely nessacary.
+    
+*/
+require("dotenv").config();
+const path = require("path");
+global.rootFolder = path.resolve(__dirname);
 
-const client = new Client();
-client.start(join(__dirname, 'source', 'commands'), join(__dirname, 'source', 'events'));
+module.exports = {
+	config: require("./config.json"),
+	Client: require("./src/cient"),
+};
