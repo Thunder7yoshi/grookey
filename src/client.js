@@ -7,6 +7,15 @@ const GT = require("./utils/grooktils");
 /*
     LOGIN
 */
+// const grookIntents = new Discord.Intents();
+// for (var intent in config.client.intents) {
+//     grookIntents.add(intent);
+// }
+// config.client.intents = grookIntents;
+// console.log(grookIntents.bitfield)
+
+// Intents seem broken, so I added them here.
+config.client = {intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES]}
 const Client = new Discord.Client(config.client);
 
 GT.loadCommands(Client);
@@ -30,7 +39,7 @@ Client.on("messageCreate",async (message) => {
     if (await GT.checkOwnerStatus(command, message) == false) return message.reply(`You are not a bot developer!`);
     // Cooldowns should be added here!
 
-    // :)
+    //
     try {
         Client.commands.get(command).execute(message, arguments, message.prefix);
     } catch (error) {
