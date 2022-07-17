@@ -7,12 +7,13 @@ const GT = require("./utils/grooktils");
 /*
     LOGIN
 */
-const grookIntents = new Discord.Intents();
-for (var intent in config.client.intents) {
-    grookIntents.add(intent);
-}
-config.client.intents = grookIntents;
-console.log(grookIntents.bitfield)
+// const grookIntents = new Discord.Intents();
+// for (var intent in config.client.intents) {
+//     grookIntents.add(intent);
+// }
+// config.client.intents = grookIntents;
+// console.log(grookIntents.bitfield)
+config.client = {intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES]}
 const Client = new Discord.Client(config.client);
 
 GT.loadCommands(Client);
@@ -27,19 +28,16 @@ Client.on("ready",()=>{
 })
 
 Client.on("messageCreate",async (message) => {
-    console.log(message.content)
     if(message.author.bot) return;
-    let {commandName, arguments} = await GK.parseMessage(message);
-    console.log(message.content)
-    if (!message.client.commands[commandName]) command = GK.checkAliases(message.client.commands, commandName);
+    let {command, arguments} = await GT.parseMessage(message);
+    if (!Client.commands.get(command)) command = await GT.checkAliases(Client.commands, command);
     if (!command) return;
     // Permission checks
-    if (await GK.checkPermissions(command, message) == false) return message.reply(`You can't do this!`);
-    if (await GK.checkOwnerStatus(command,message) == false) return message.reply(`You are not a bot developer!`);
-
+    if (await GT.checkPermissions(command, message) == false) return message.reply(`You can't do this!`);
+    if (await GT.checkOwnerStatus(command, message) == false) return message.reply(`You are not a bot developer!`);
     // Cooldowns should be added here!
     try {
-        command.execute(message, arguments, message.prefix);
+        Client.commands.get(command).execute(message, arguments, message.prefix);
     } catch (error) {
         console.log(error);
         message.reply('There was an error trying to execute that command!');

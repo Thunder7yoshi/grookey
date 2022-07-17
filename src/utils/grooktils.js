@@ -37,7 +37,6 @@ async function loadCommands(Client) {
     var c = 0;
     const commandsDir = path.join(__dirname, "../commands");
     Client.commands = new Discord.Collection();
-
     const commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
         i++;
@@ -71,9 +70,9 @@ async function parseMessage(message) {
     if (!message.content.startsWith(message.prefix)) return {command:null, arguments:null}; //if theres no prefix at the start, return null
 
     const arguments = message.content.slice(message.prefix.length).trim().split(/ +/); // get arguments
-
-    const command = args.shift().toLowerCase(); // command name
-
+    console.log(arguments)
+    const command = arguments.shift().toLowerCase(); // command name
+    console.log(command)
     return {command: command, arguments: arguments}
     
 }
@@ -87,7 +86,7 @@ async function parseMessage(message) {
 async function checkAliases(commands, alias) {
     let found = null;
     for (var command in commands) {
-        if (commands[command].aliases.include(alias)) {
+        if (commands.get(command).aliases.include(alias)) {
             found=command;
             break;
         }
