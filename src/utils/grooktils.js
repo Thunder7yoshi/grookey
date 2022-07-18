@@ -8,7 +8,8 @@ const Discord = require("discord.js");
 const config = require("../../config.json");
 const fs = require("fs");
 const path = require("path");
-
+const {fetch} = require("node-fetch-commonjs");
+const { setTimeout } = require("timers/promises");
 /**
  * @name messageOwners
  * @description Sends a message to all owners in config file
@@ -39,7 +40,6 @@ async function loadCommands(Client) {
     Client.commands = new Discord.Collection();
     const commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.js'));
     for (const file of commandFiles) {
-        i++;
         const command = require(`${commandsDir}/${file}`);
         try {
             (command.disabled == undefined) ? Client.commands.set(command.name, command) : null;
@@ -48,7 +48,7 @@ async function loadCommands(Client) {
             console.log(e);   
         }
     }
-    console.log(`${c}/${i} commands successfully loaded!`)
+    console.log(`${c}/${commandFiles.length} commands successfully loaded!`)
 }
 /**
  * @name parseMessage
@@ -63,15 +63,13 @@ async function parseMessage(message) {
     if (message.guild) {
         // heres where we would have our prefix check, but as MongoDB hasn't been setup yet, ill just default it to g!
         // - DwifteJB
-        message.prefix = "g!";
-    } else message.prefix = "g!"
+        message.prefix = config.prefix;
+    } else message.prefix = config.prefix;
 
     if (!message.content.startsWith(message.prefix)) return {command:null, arguments:null}; //if theres no prefix at the start, return null
 
     const arguments = message.content.slice(message.prefix.length).trim().split(/ +/); // get arguments
-    console.log(arguments)
     const command = arguments.shift().toLowerCase(); // command name
-    console.log(command)
     return {command: command, arguments: arguments}
     
 }
@@ -125,14 +123,107 @@ async function checkOwnerStatus(command,message) {
     }
     return true;
 }
-// if (command.botOwner) {
-    
-// }
+/**
+ * @name dashboardValidity
+ * @description Checks the validity of a dashboard
+ * @author DwifteJB
+ * @param {String} url
+ * @param {String} pass
+ */
+async function dashboardValidity(url,pass) {
+    if(url.length == 0) return false;
+    if(!url.startsWith("http")||!url.startsWith("https")) return false
+    try {
+        const response = await fetch(url+"/api/check", {
+            method: "post",
+            body: {"password":pass}
+        });
+        const data = response.data();
+        if (data.status == true) return true
+    } catch(e) {
+        return false
+    }
+}
+/**
+ * @name Dashboard
+ * @description All the logic surrounding the Dashboard
+ * @author DwifteJB
+ * @param {String} url
+ * @param {String} password
+ * @param {Client} Client
+ */
+class Dashboard {
+    constructor(url,password,Client) {
+        this.url, this.password, this.Client = url,password,Client;
+        if (await this.connect(url,password,Client)==true) {
+            // rest of logic
+            // use Client.emit("blah", data) to send data
+            var doneInstructions = [];
+            function doInstructions(url,password, Client) {
+                setInterval(function() {
+                    const data = await recieveData(url,password);
+                    
+                    for (var instruction in data.instructions) {
+                        if (doneInstructions.includes(instruction.id)) return;
+                        try {
+                            this.Client.emit(instruction.task,instruction.data);
+                        } catch (e) {
+                            await fetch(url+"/api/failed", {
+                                body: {
+                                    body: {id:instruction.id},
+                                    password: password
+                                }
+                            });
+                        }
+                        doneInstructions.push(instruction.id);
+                    }
+                    doInstructions(url,password, Client);
+                }, 120000)
+            }
+        }
+    }
+    async connect(url,password,Client) {
+        try {
+            const response = await fetch(url+"/api/connect", {
+                method: "post",
+                body: {
+                    Client: Client,
+                    password: password
+                }
+            });
+            const data = response.json();
+            if (data.status == true) {
+                console.log("Successfully connected to Dashboard!")
+                return true;
+            } else return false;
+        } catch (e) {
+            console.error("Failed to connect to dashboard:\n",e);
+            return false;
+        }
+    }
+    async recieveData(url,password) {
+        try {
+            const response = await fetch(url+"/api/recieveData", {
+                method: "post",
+                body: {
+                    password: password
+                }
+            });
+            const data = response.json();
+            return data;
+        } catch (e) {
+            console.error("Failed to connect to dashboard:\n",e);
+            return false;
+        }
+    }
+}
 module.exports = {
     messageOwners,
     loadCommands,
     parseMessage,
     checkAliases,
     checkPermissions,
-    checkOwnerStatus
+    checkOwnerStatus,
+    dashboardValidity,
+    Dashboard
 }
