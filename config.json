@@ -1,4 +1,5 @@
 {
+    "prefix": "g!",
     "ownerIDS": ["521762564062052393"],
     "client": {
         "intents": ["Discord.Intents.FLAGS.GUILD_MESSAGES", "Discord.ntents.FLAGS.GUILD_PRESENCES", "Discord.Intents.FLAGS.GUILD_MEMBERS", "Discord.Intents.FLAGS.GUILDS"],
@@ -14,5 +15,9 @@
             }],
             "status": "idle"
         }
+    },
+    "dashboard": {
+        "serverURL": "",
+        "serverPASS": ""
     }
 }

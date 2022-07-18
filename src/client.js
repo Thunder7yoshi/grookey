@@ -47,5 +47,6 @@ Client.on("messageCreate",async (message) => {
         message.reply('There was an error trying to execute that command!');
     }
 })
-
+var dashboard = null;
+if (await GT.serverValidity(config.dashboard.serverURL,config.dashboard.serverPASS) == true) dashboard = new GT.Dashboard(config.dashboard.serverURL, config.dashboard.serverPASS, Client)
 module.exports = Client;
