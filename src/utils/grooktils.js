@@ -132,7 +132,7 @@ async function checkOwnerStatus(command,message) {
  */
 async function dashboardValidity(url,pass) {
     if(url.length == 0) return false;
-    if(!url.startsWith("http")||!url.startsWith("https")) return false
+    if(!url.startsWith("http")) return false
     try {
         const response = await fetch(url+"/api/check", {
             method: "post",
