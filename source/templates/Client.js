@@ -1,25 +1,29 @@
-const { Client, Collection, Intents } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
+const Sequelize = require('../templates/Sequelize');
 
 require('dotenv').config();
-const { token } = process.env;
+const { token, prefix } = process.env;
 
 //#region Client options and intents
 const {
-    GUILDS,
-    GUILD_BANS,
-    GUILD_EMOJIS_AND_STICKERS,
-    GUILD_MEMBERS,
-    GUILD_MESSAGES,
-} = Intents.FLAGS;
+    Guilds,
+    GuildBans,
+    GuildEmojisAndStickers,
+    GuildMembers,
+    GuildMessages,
+    MessageContent
+} = GatewayIntentBits;
 
 const clientOptions = {
     intents: [
-        GUILDS,
-        GUILD_BANS,
-        GUILD_EMOJIS_AND_STICKERS,
-        GUILD_MEMBERS,
-        GUILD_MESSAGES,
+        Guilds,
+        GuildBans,
+        GuildEmojisAndStickers,
+        GuildMembers,
+        GuildMessages,
+        MessageContent
     ],
+    partials: [Partials.Channel],
     allowedMentions: {
         repliedUser: false,
     },
@@ -37,24 +41,34 @@ const clientOptions = {
 
 const { readFiles } = require('./Util');
 module.exports = class Grookey extends Client {
-    constructor() {
+    constructor(options = {}) {
         super(clientOptions);
+
+        this.commands_path = options.commands_path;
+        this.events_path = options.events_path;
         this.commands = new Collection();
+        this.prefix = prefix;
+        this.sequelize = new Sequelize();
+
+        this.on('ready', this.onReady);
+
+        this._token = token;
     };
-    load(commands_path, events_path) {
-        const commands = readFiles(commands_path);
+    async onReady() {
+        console.log('I\'m ready');
+        this.loadFiles();
+        await this.sequelize.auth();
+    };
+    loadFiles() {
+        const commands = readFiles(this.commands_path);
         for(const fileName of commands) {
-            const command = new (require(fileName))();
+            const command = new (require(fileName))({ client: this });
             this.commands.set(command.name, command);
         };
-        const events = readFiles(events_path);
+        const events = readFiles(this.events_path);
         for(const fileName of events) {
             const event = new (require(fileName))();
-            this[ event.once ? 'once' : 'on'](event.name, (...args) => event.execute(...args, this));
+            (event.rest ? this.rest : this)[ event.once ? 'once' : 'on'](event.name, (...args) => event.execute(...args, this));
         };
-    };
-    start(commands_path, events_path) {
-        this.load(commands_path, events_path);
-        this.login(token);
     };
 };
