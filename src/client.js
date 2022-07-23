@@ -15,12 +15,12 @@ const GT = require("./utils/grooktils");
 // console.log(grookIntents.bitfield)
 
 // Intents seem broken, so I added them here.
-config.client = {intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES]}
+config.client.intents = [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES]
 const Client = new Discord.Client(config.client);
+
 
 GT.loadCommands(Client);
 Client.login(process.env.TOKEN);
-
 /*
     EVENTS
 */
@@ -47,6 +47,13 @@ Client.on("messageCreate",async (message) => {
         message.reply('There was an error trying to execute that command!');
     }
 })
-var dashboard = null;
-if (await GT.serverValidity(config.dashboard.serverURL,config.dashboard.serverPASS) == true) dashboard = new GT.Dashboard(config.dashboard.serverURL, config.dashboard.serverPASS, Client)
+
+GT.dashboardValidity(config.dashboard.serverURL, config.dashboard.serverPASS).then(async (response) => {
+    if (response== true) { 
+        console.log("Dashoard Loading.")
+        var dashboard = GT.Dashboard(config.dashboard.serverURL, config.dashboard.serverPASS, Client); 
+    }
+})
+
+
 module.exports = Client;

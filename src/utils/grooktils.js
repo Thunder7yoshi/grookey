@@ -144,79 +144,89 @@ async function dashboardValidity(url,pass) {
         return false
     }
 }
+ async function recieveData(url,password) {
+    try {
+        const response = await fetch(url+"/api/recieveData", {
+            method: "post",
+            body: {
+                password: password
+            }
+        });
+        const data = response.json();
+        return data;
+    } catch (e) {
+        console.error("Failed to connect to dashboard:\n",e);
+        return false;
+    }
+}
+async function DBconnect(url,password,Client) {
+    try {
+        const response = await fetch(url+"/api/connect", {
+            method: "post",
+            body: {
+                Client: Client,
+                password: password
+            }
+        });
+        const data = response.json();
+        if (data.status == true) {
+            console.log("Successfully connected to Dashboard!")
+            return true;
+        } else return false;
+    } catch (e) {
+        console.error("Failed to connect to dashboard:\n",e);
+        return false;
+    }
+}
+/**
+ * @name capitaliseFirst
+ * @description Capitalises the first (and only the first) letter in a string
+ * @author DwifteJB
+ * @param {String} string
+ * @returns {String}
+ */
+function capitaliseFirst(string) {
+    string = string.toLowerCase();
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 /**
  * @name Dashboard
- * @description All the logic surrounding the Dashboard
+ * @description Dashboard logic.
  * @author DwifteJB
  * @param {String} url
  * @param {String} password
  * @param {Client} Client
  */
-class Dashboard {
-    constructor(url,password,Client) {
-        this.url, this.password, this.Client = url,password,Client;
-        if (await this.connect(url,password,Client)==true) {
-            // rest of logic
-            // use Client.emit("blah", data) to send data
-            var doneInstructions = [];
-            function doInstructions(url,password, Client) {
-                setInterval(function() {
-                    const data = await recieveData(url,password);
-                    
-                    for (var instruction in data.instructions) {
-                        if (doneInstructions.includes(instruction.id)) return;
-                        try {
-                            this.Client.emit(instruction.task,instruction.data);
-                        } catch (e) {
-                            await fetch(url+"/api/failed", {
-                                body: {
-                                    body: {id:instruction.id},
-                                    password: password
-                                }
-                            });
-                        }
-                        doneInstructions.push(instruction.id);
+async function Dashboard(url,password,Client) {
+    var connection = await this.DBconnect(url,password,Client);
+    if (connection==true) {
+        // rest of logic
+        // use Client.emit("blah", data) to send data
+        var doneInstructions = [];
+        async function doInstructions(url,password, Client) {
+            setInterval(async function() {
+                const data = await this.recieveData(url,password);
+                
+                for (var instruction in data.instructions) {
+                    if (doneInstructions.includes(instruction.id)) return;
+                    try {
+                        this.Client.emit(instruction.task,instruction.data);
+                    } catch (e) {
+                        fetch(url+"/api/failed", {
+                            body: {
+                                body: {id:instruction.id},
+                                password: password
+                            }
+                        });
                     }
-                    doInstructions(url,password, Client);
-                }, 120000)
-            }
-        }
-    }
-    async connect(url,password,Client) {
-        try {
-            const response = await fetch(url+"/api/connect", {
-                method: "post",
-                body: {
-                    Client: Client,
-                    password: password
+                    doneInstructions.push(instruction.id);
                 }
-            });
-            const data = response.json();
-            if (data.status == true) {
-                console.log("Successfully connected to Dashboard!")
-                return true;
-            } else return false;
-        } catch (e) {
-            console.error("Failed to connect to dashboard:\n",e);
-            return false;
-        }
-    }
-    async recieveData(url,password) {
-        try {
-            const response = await fetch(url+"/api/recieveData", {
-                method: "post",
-                body: {
-                    password: password
-                }
-            });
-            const data = response.json();
-            return data;
-        } catch (e) {
-            console.error("Failed to connect to dashboard:\n",e);
-            return false;
+                doInstructions(url,password, Client);
+            }, 120000)
         }
     }
 }
+
 module.exports = {
     messageOwners,
     loadCommands,
@@ -225,5 +235,6 @@ module.exports = {
     checkPermissions,
     checkOwnerStatus,
     dashboardValidity,
-    Dashboard
+    Dashboard,
+    capitaliseFirst
 }
